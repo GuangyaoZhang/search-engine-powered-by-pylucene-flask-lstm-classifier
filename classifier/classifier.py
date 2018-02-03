@@ -5,8 +5,8 @@ import torch.nn as nn
 import matplotlib.pyplot as plt
 import os
 import sys
-d = os.getcwd()
-os.chdir(os.path.dirname(__file__))
+# d = os.getcwd()
+# os.chdir(os.path.dirname(__file__))
 sys.path.append(os.path.join(os.path.dirname(__file__),'..'))
 sys.path.append(os.path.join(os.path.dirname(__file__),'.'))
 from torch.utils.data import DataLoader
@@ -28,10 +28,10 @@ class clf_profile():
         self.keys = ['Title','PubDate','WBSB', 'DSRXX', 'SSJL', 'AJJBQK', 'CPYZ', 'PJJG', 'WBWB']
         self.class_num = None
         self.shuffle = True
-        self.test_size = 5120
-        self.max_lenth = 300
+        self.test_size = 512
+        self.max_lenth = 200
         self.min_frequency = 5
-        self.batch_size = 128
+        self.batch_size = 512
         self.epoch = 20
         self.eval = 2000
         self.save = 5000
@@ -46,7 +46,7 @@ class clf_profile():
 
         self.vocaber = None
 
-        self.cuda = True
+        self.cuda = False
         self.Train = True
 
         self.Build_Dic = False
@@ -79,11 +79,11 @@ class Classifier():
 
 
     def train(self):
-        # model = TextLSTM(self.param.embed_num, self.param.embed_dim, 100, 100, self.param.class_num, kernel_num=self.param.kernel_num,
-        #                  kernel_size=self.param.kernel_size, vocaber=self.param.vocaber)
-        model = TextCNN(self.param.embed_num, self.param.embed_dim, 100, 100, self.param.class_num,
-                         kernel_num=self.param.kernel_num,
+        model = TextLSTM(self.param.embed_num, self.param.embed_dim, 100, 100, self.param.class_num, kernel_num=self.param.kernel_num,
                          kernel_size=self.param.kernel_size, vocaber=self.param.vocaber)
+        # model = TextCNN(self.param.embed_num, self.param.embed_dim, 100, 100, self.param.class_num,
+        #                  kernel_num=self.param.kernel_num,
+        #                  kernel_size=self.param.kernel_size, vocaber=self.param.vocaber)
 
 
         # model = LSTMClassifier(300,100,param.embed_num,param.class_num,param.batch_size,True)
@@ -101,7 +101,7 @@ class Classifier():
         import torch.nn.functional as F
         model = TextLSTM(self.param.embed_num, self.param.embed_dim, 100, 100, self.param.class_num, kernel_num=self.param.kernel_num,
                          kernel_size=self.param.kernel_size, vocaber=self.param.vocaber)
-        model.load_state_dict(torch.load("params_5000 acc 0.9174_.pkl"))
+        model.load_state_dict(torch.load("params_1450 acc 0.8994_.pkl"))
         model.eval()
         sentence = self.Text.seg(sentence)
         sentence = self.Text.remove_stop_word(sentence)
@@ -121,7 +121,7 @@ class Classifier():
     def Train(self,text,model,loss_fun,optimizer,epoch,cuda,eval,save):
         gc.collect()
         if cuda:
-            model = model.cuda()
+            model = model
         loss_total = 0
         step = 0
 
@@ -145,8 +145,8 @@ class Classifier():
                 data.requires_grad=False
                 label = Variable(label)
                 if cuda:
-                    data = data.cuda()
-                    label = label.cuda()
+                    data = data
+                    label = label
                 output = model(data)
                 loss = loss_fun(output, label)
 
@@ -154,7 +154,7 @@ class Classifier():
                 loss.backward()
                 optimizer.step()
 
-                if (step % 50 == 0):
+                if (step % 10 == 0):
                     model.eval()
 
                     acc = self.eva(model,test_loader)
@@ -169,7 +169,7 @@ class Classifier():
                             os.remove(last_file_name)
                         last_file_name='params_'+str(step)+" acc " +str(acc)+ '_.pkl'
                         torch.save(model.state_dict(), last_file_name)
-                        model = model.cuda()
+                        model = model
                     else:
                         print(step," ",acc,".top acc is ",top_acc,ep)
                     model.train()
@@ -195,8 +195,8 @@ class Classifier():
         real = []
         for batch in test_loader:
             data, label = batch
-            data = Variable(data[0]).cuda()
-            label = Variable(label).cuda()
+            data = Variable(data[0])
+            label = Variable(label)
             output = model(data)
             _, predict = torch.max(output, 1)
             predicts+=predict.data.cpu().tolist()
@@ -213,4 +213,4 @@ class Classifier():
 if __name__ == "__main__":
     clf = Classifier()
     clf.train()
-    print(clf.predict("2016-09-19"))
+    # print(clf.predict("2015-12-31"))

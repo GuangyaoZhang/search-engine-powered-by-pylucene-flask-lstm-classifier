@@ -8,6 +8,7 @@ import random
 from torch.utils.data import Dataset
 from collections import defaultdict
 from gensim.models import Word2Vec
+import pymysql
 class dataset(Dataset):
     def __init__(self,texts,labels,vocaber):
         self.texts = texts
@@ -33,8 +34,9 @@ class Text_processing():
         self.seg_data_file = os.path.join(self.data_dir,'seg_data.pkl')
         self.seg_without_stopword_data = os.path.join(self.data_dir,'seg_without_stopword_data.pkl')
         self.test_data = os.path.join(self.data_dir,'test.txt')
-        self.vocaber = os.path.join(self.data_dir,'vocaber.pkl')
-        self.max_lenth = 300
+        self.vocaber = os.path.join(self.data_dir,'vocaber_file.pkl')
+        self.doc_data_file = os.path.join(self.data_dir,'doc_file.pkl')
+        self.max_lenth = 200
         self.min_frequency = 5
     def init_segging(self,model_path=b'', user_dict_path=b'', pre_alloc_size=1024 * 1024 * 16, t2s=False, just_seg=True):
 
@@ -80,8 +82,31 @@ class Text_processing():
             if (i not in self.stopword_set):
                 value_tmp.append(i)
         return " ".join(value_tmp)
+    def save_doc_data(self):
+        docs = []
+        file = open(self.raw_data_file,'rb')
+        jss = pickle.load(file)
+        for s,item in enumerate(jss[:-1000]):
+            document = item['document']
+            doc_tmp = dict()
+            for key in self.keys:
+                if key in document:
+                    doc_tmp[key] = document[key]
+            docs.append(doc_tmp)
+        jss = None
+        import gc
+        gc.collect()
+        file = open(self.doc_data_file, 'wb')
+        pickle.dump(docs,file)
+        return docs
 
-
+    def load_doc_data(self):
+        try:
+            file = open(self.doc_data_file,'rb')
+        except FileNotFoundError:
+            return self.save_doc_data()
+        else:
+            return pickle.load(file)
 
     def save_seg_data(self,save=True):
         docs = []
@@ -99,6 +124,15 @@ class Text_processing():
                         if i != '　' and i != ' ':
                             st_list.append(i)
                     content = ''.join(st_list)
+
+                    if (index == 1):
+                        st_list = []
+                        for i in content:
+                            if(i == '-'):
+                                st_list.append(' ')
+                            else:
+                                st_list.append(i)
+                        content = ''.join(st_list)
                     if (len(content) != 0):
                         content_seg = self.seg(content)
                         document_seg[key] = content_seg
@@ -191,7 +225,9 @@ class Text_processing():
             if(len(sentence)<10):
                 pass
             else:
-                l = random.randint(10,min(300,len(sentence)))
+
+                l = random.randint(10,min(200,len(sentence)))
+
                 start = random.randint(0,len(sentence)-l)
                 stop = start+l
                 sentence = sentence[start:stop]
@@ -203,6 +239,9 @@ class Text_processing():
 
     def save_vocaber(self):
         data,target = self.get_balanced_labled_cleaned_data()
+        print(len(data))
+        data = data[:400000]
+        target = target[:400000]
         vocaber = learn.preprocessing.VocabularyProcessor(self.max_lenth, min_frequency=self.min_frequency)
         vocaber.fit(data)
         file = open(self.vocaber,'wb')
@@ -275,7 +314,7 @@ class Text_processing():
             for word in sentence.split():
                 counter[word]+=1
         for num,d in enumerate(data):
-            for word in d.split()[:300]:
+            for word in d.split()[:200]:
                 if(counter[word]>=5):
                     if vocaber.vocabulary_.get(word)==0:
                         new_stop_word.add(word)
@@ -299,14 +338,14 @@ class Text_processing():
         data,target = self.get_balanced_labled_cleaned_data()
         data, target = self.cut_head_and_tail(data,target)
         data,target = self.random_intercept(data,target)
-        data,target = self.throw_out_randomly(data,target)
+        # data,target = self.throw_out_randomly(data,target)
         random.seed(1)
         random.shuffle(data)
         random.seed(1)
         random.shuffle(target)
 
-        train_data, test_data = data[:-5000],data[-5000:]
-        train_target, test_target = target[:-5000], target[-5000:]
+        train_data, test_data = data[:250000],data[250000:251000]
+        train_target, test_target = target[:250000], target[250000:251000]
         vocaber = self.load_vocaber()
         if (train):
             return dataset(train_data, train_target, vocaber)
@@ -321,7 +360,7 @@ class Text_processing():
         data,target=self.get_balanced_labled_cleaned_data()
 
         for num, i in enumerate(data):
-            for word in i.split()[:300]:
+            for word in i.split()[:200]:
                 try:
                     model.wv[word]
                 except Exception:
@@ -332,6 +371,14 @@ class Text_processing():
         for i in stop_word_new:
             file.write(i)
             file.write('\n')
+    def save_in_mysql(self):
+        pass
+
 if __name__=="__main__":
     t=Text_processing()
-    s = t.whatstop()
+    li = []
+    for i in range(100):
+        li.append(" ".join([str(i) for i in range(100)]))
+
+    s,_ = t.random_intercept(li,None)
+    print([])

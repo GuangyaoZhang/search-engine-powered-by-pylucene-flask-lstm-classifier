@@ -87,6 +87,7 @@ class Searcher():
                     document.add(Field(key, content, t1))
                 else:
                     document.add(Field(key, content, t2))
+            document.add(Field('id',str(n),t1))
             writer.addDocument(document)
             if (n % 1000 == 0):
                 print(n)
@@ -128,6 +129,7 @@ class Searcher():
                     result = dict()
                     for i in self.keys:
                         result[i] = doc.get(i)
+                    result['id'] = doc.get('id')
                     results.append(result)
                 probs_tmp = ""
                 for key,prob in zip(self.keys,probs):
@@ -156,15 +158,16 @@ class Searcher():
                     result = dict()
                     for i in self.keys:
                         result[i]=doc.get(i)
+                    result['id'] = doc.get('id')
                     results.append(result)
                 return results
 
 if __name__ == "__main__":
     sear = Searcher()
     # sear.indexing()
-    a,b,c = sear.search("2016-12-20",num=1,use_clf=True)
+    docs = sear.text.load_doc_data()
+    print()
+    a=sear.search("杀人",1,False)[0]
     print(a)
-    print(b)
-    print(c)
-
+    print(docs[int(a['id'])])
 

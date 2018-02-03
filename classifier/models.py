@@ -28,7 +28,7 @@ class TextLSTM(nn.Module):
 
         self.convs = nn.ModuleList([nn.Conv2d(1,kernel_num,kernel_size=(k,self.hidden_size)) for k in kernel_size])
 
-        self.conv = nn.Conv2d(1,128,kernel_size=(3,self.hidden_size))
+        # self.conv = nn.Conv2d(1,128,kernel_size=(3,self.hidden_size))
 
 
         self.linears = nn.Sequential(
