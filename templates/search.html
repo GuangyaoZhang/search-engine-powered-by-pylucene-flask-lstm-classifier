@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Search</title>
+</head>
+<body>
+    <form method="post" action="/search">
+        <table>
+            <tr>
+                <td>
+                    <input type = "text" name="query" {%if command%} value="{{command}}" {%endif%}>
+                </td>
+                <td>
+                    <input type="submit" value="搜索">
+                </td>
+                <td>
+                     使用分类器
+                </td>
+                <td>
+
+                    <input type = "checkbox" name="use_clf" value="use_clf" {%if use_clf%} checked {%endif%}>
+
+                </td>
+            </tr>
+            </tr>
+        </table>
+    </form>
+
+    {%if probs is defined%}
+    <p>probs:{{probs}}</p>
+    <p>key_use:{{key_use}}</p>
+
+    {%endif%}
+
+
+    <!--{% if title %}-->
+    <!--<p>title:{{title}}</p>-->
+    <!--{% endif %}-->
+    <!--{% if PubDate %}-->
+    <!--<p>PubDate:{{PubDate}}</p>-->
+    <!--{% endif %}-->
+    <ol>
+        {% if results %}
+        {%for item in results%}
+        <li>
+            <ul>
+                <li>
+                    Title:{{item.Title}}
+                </li>
+                <li>
+                    Pubdate:{{item.Pubdate}}
+                </li>
+                <li>
+                    WBSB:{{item.WBSB}}
+                </li>
+                <li>
+                    DSRXX:{{item.DSRXX}}
+                </li>
+                <li>
+                    SSJL:{{item.SSJL}}
+                </li>
+                <li>
+                    AJJBQK:{{item.AJJBQK}}
+                </li>
+                <li>
+                    CPYZ:{{item.CPYZ}}
+                </li>
+                <li>
+                    PJJG:{{item.PJJG}}
+                </li>
+                <li>
+                    WBWB:{{item.WBWB}}
+                </li>
+            </ul>
+
+        </li>
+        {%endfor%}
+        {%endif %}
+    </ol>
+
+</body>
+</html>
