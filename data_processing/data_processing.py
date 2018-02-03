@@ -9,6 +9,7 @@ from torch.utils.data import Dataset
 from collections import defaultdict
 from gensim.models import Word2Vec
 import pymysql
+import re
 class dataset(Dataset):
     def __init__(self,texts,labels,vocaber):
         self.texts = texts
@@ -372,7 +373,54 @@ class Text_processing():
             file.write(i)
             file.write('\n')
     def save_in_mysql(self):
-        pass
+        db = pymysql.connect("localhost", "root", "19961231", "law_data", charset='utf8')
+        cursor = db.cursor()
+        sql = """drop table law_data;
+            CREATE TABLE law_data(
+            id int (10) PRIMARY KEY ,
+            Title LONGTEXT,
+            Pubdate DATE ,
+            WBSB LONGTEXT,
+            DSRXX LONGTEXT,
+            SSJL LONGTEXT,
+            AJJBQK LONGTEXT,
+            CPYZ LONGTEXT,
+            PJJG LONGTEXT,
+            WBWB LONGTEXT) default charset=utf8"""
+        cursor.execute(sql)
+        pattern = re.compile(r'\d\d\d\d-\d\d-\d\d')
+        text = Text_processing()
+        raw_data = text.load_doc_data()
+        sql_base = """insert into law_data(id,%s,%s,%s,%s,%s,%s,%s,%s,%s)""" % tuple(keys)
+        for num, i in enumerate(raw_data):
+            value = []
+            value.append(num)
+            for key in self.keys:
+                if (key in i):
+                    if (key == "PubDate"):
+                        if (not pattern.match(i[key])):
+                            value.append('NULL')
+                            continue
+                    value.append("\"" + i[key] + "\"")
+                else:
+                    value.append('NULL')
+
+            sql = sql_base + " value(%d,%s,%s,%s,%s,%s,%s,%s,%s,%s)" % tuple(value)
+
+            cursor.execute(sql)
+            if (num % 100 == 0):
+                print(num)
+        db.commit()
+        cursor.close()
+        db.close()
+    def select_from_mysql(self,id):
+        db = pymysql.connect("localhost", "root", "19961231", "law_data", charset='utf8')
+        cursor = db.cursor()
+        sql = """ select * from law_data where id=%d"""%(id)
+        cursor.execute(sql)
+        cursor.close()
+        db.close()
+        return cursor.fetchall()
 
 if __name__=="__main__":
     t=Text_processing()

@@ -165,9 +165,9 @@ class Searcher():
 if __name__ == "__main__":
     sear = Searcher()
     # sear.indexing()
-    docs = sear.text.load_doc_data()
+    t = Text_processing()
     print()
     a=sear.search("杀人",1,False)[0]
     print(a)
-    print(docs[int(a['id'])])
+    print(t.select_from_mysql(int(a['id'])))
 
