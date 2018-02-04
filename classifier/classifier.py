@@ -59,7 +59,10 @@ class Classifier():
 
         self.Text = Text_processing()
 
+        self.trained_model_file = os.path.join(self.Text.get_data_dir(),"params_1230 acc 0.922_.pkl")
+
         vec_model = Word2Vec.load("/media/zgy/新加卷/cuda/zhwiki/model")
+
         param.vec_model = vec_model
         param.vocaber = self.Text.load_vocaber()
 
@@ -101,7 +104,7 @@ class Classifier():
         import torch.nn.functional as F
         model = TextLSTM(self.param.embed_num, self.param.embed_dim, 100, 100, self.param.class_num, kernel_num=self.param.kernel_num,
                          kernel_size=self.param.kernel_size, vocaber=self.param.vocaber)
-        model.load_state_dict(torch.load("params_1450 acc 0.8994_.pkl"))
+        model.load_state_dict(torch.load(self.trained_model_file))
         model.eval()
         sentence = self.Text.seg(sentence)
         sentence = self.Text.remove_stop_word(sentence)
@@ -114,8 +117,6 @@ class Classifier():
         return result.data.numpy()[0]
 
         os.chdir(os.path.dirname(__file__))
-
-
 
 
     def Train(self,text,model,loss_fun,optimizer,epoch,cuda,eval,save):

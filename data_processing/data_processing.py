@@ -37,8 +37,17 @@ class Text_processing():
         self.test_data = os.path.join(self.data_dir,'test.txt')
         self.vocaber = os.path.join(self.data_dir,'vocaber_file.pkl')
         self.doc_data_file = os.path.join(self.data_dir,'doc_file.pkl')
+        self.stopword_file = os.path.join(self.data_dir,'stopword')
+
         self.max_lenth = 200
         self.min_frequency = 5
+
+    def get_data_dir(self):
+        return self.data_dir
+
+    def get_keys(self):
+        return self.keys
+
     def init_segging(self,model_path=b'', user_dict_path=b'', pre_alloc_size=1024 * 1024 * 16, t2s=False, just_seg=True):
 
         if self._lib == None:
@@ -53,6 +62,11 @@ class Text_processing():
         if self._lib != None: self._lib.deinit()
 
     def seg(self,sentence):
+        s_t = []
+        for i in sentence:
+            if(i!=' ' and i!='　'):
+                s_t.append(i)
+        sentence = "".join(s_t)
         sentence = sentence.encode('UTF-8')
         if(self._lib ==None):
             self.init_segging()
@@ -68,7 +82,7 @@ class Text_processing():
         return d
 
     def init_stop_word(self):
-        file = open("../../data/stopword",'r')
+        file = open(self.stopword_file,'r')
         stop_word_set = set()
         for num, i in enumerate(file):
             stop_word_set.add(i[:-1])
@@ -134,6 +148,10 @@ class Text_processing():
                             else:
                                 st_list.append(i)
                         content = ''.join(st_list)
+                        if (len(content) != 0):
+                            content_seg = content
+                            document_seg[key] = content_seg
+                        continue
                     if (len(content) != 0):
                         content_seg = self.seg(content)
                         document_seg[key] = content_seg

@@ -16,7 +16,7 @@ def search():
     use_clf = ("use_clf" in request.form)
 
     if(use_clf):
-        results, probs, key_use= searcher.search(command,100,use_clf)
+        results, probs, key_use= searcher.search(command,20,use_clf)
         return render_template('search.html', results=results, use_clf=use_clf, command=command,probs=probs, key_use=key_use)
     else:
         results = searcher.search(command,100,use_clf)
