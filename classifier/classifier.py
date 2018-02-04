@@ -5,6 +5,7 @@ import torch.nn as nn
 import matplotlib.pyplot as plt
 import os
 import sys
+import torch.nn.functional as F
 # d = os.getcwd()
 # os.chdir(os.path.dirname(__file__))
 sys.path.append(os.path.join(os.path.dirname(__file__),'..'))
@@ -70,6 +71,12 @@ class Classifier():
         print(param.embed_num)
         self.param = param
 
+        self.model = TextLSTM(self.param.embed_num, self.param.embed_dim, 100, 100, self.param.class_num,
+                         kernel_num=self.param.kernel_num,
+                         kernel_size=self.param.kernel_size, vocaber=self.param.vocaber)
+        self.model.load_state_dict(torch.load(self.trained_model_file))
+        self.model.eval()
+
 
             # model = TextLSTM(param.embed_num, param.embed_dim, 100, 100, param.class_num, kernel_num=param.kernel_num,
             #                  kernel_size=param.kernel_size, vocaber=param.vocaber)
@@ -82,30 +89,24 @@ class Classifier():
 
 
     def train(self):
-        model = TextLSTM(self.param.embed_num, self.param.embed_dim, 100, 100, self.param.class_num, kernel_num=self.param.kernel_num,
+        self.model = TextLSTM(self.param.embed_num, self.param.embed_dim, 100, 100, self.param.class_num, kernel_num=self.param.kernel_num,
                          kernel_size=self.param.kernel_size, vocaber=self.param.vocaber)
         # model = TextCNN(self.param.embed_num, self.param.embed_dim, 100, 100, self.param.class_num,
         #                  kernel_num=self.param.kernel_num,
         #                  kernel_size=self.param.kernel_size, vocaber=self.param.vocaber)
 
-
         # model = LSTMClassifier(300,100,param.embed_num,param.class_num,param.batch_size,True)
-        print(model)
+        print(self.model)
         loss_fun = nn.CrossEntropyLoss()
-        optimizer = torch.optim.Adam(list(filter(lambda p: p.requires_grad, model.parameters())))
+        optimizer = torch.optim.Adam(list(filter(lambda p: p.requires_grad, self.model.parameters())))
 
-        self.Train(self.Text, model, loss_fun, optimizer, self.param.epoch,
+        self.Train(self.Text, self.model, loss_fun, optimizer, self.param.epoch,
               self.param.cuda, self.param.eval, self.param.save)
 
-
-
-
     def predict(self,sentence):
-        import torch.nn.functional as F
-        model = TextLSTM(self.param.embed_num, self.param.embed_dim, 100, 100, self.param.class_num, kernel_num=self.param.kernel_num,
-                         kernel_size=self.param.kernel_size, vocaber=self.param.vocaber)
-        model.load_state_dict(torch.load(self.trained_model_file))
-        model.eval()
+
+        model = self.model
+
         sentence = self.Text.seg(sentence)
         sentence = self.Text.remove_stop_word(sentence)
         vec = self.Text.get_embed(sentence)

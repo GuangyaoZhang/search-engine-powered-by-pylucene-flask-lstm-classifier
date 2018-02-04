@@ -10,6 +10,21 @@ from collections import defaultdict
 from gensim.models import Word2Vec
 import pymysql
 import re
+
+class mysql_data():
+    def __init__(self):
+        self.db = pymysql.connect("localhost", "root", "19961231", "law_data", charset='utf8')
+        self.cursor = self.db.cursor()
+    def __del__(self):
+        self.cursor.close()
+        self.db.close()
+    def search(self,id):
+        sql = """ select * from law_data where id=%d""" % (id)
+        self.cursor.execute(sql)
+        return self.cursor.fetchall()
+
+
+
 class dataset(Dataset):
     def __init__(self,texts,labels,vocaber):
         self.texts = texts
@@ -32,18 +47,29 @@ class Text_processing():
         self.keys = ['Title', 'PubDate', 'WBSB', 'DSRXX', 'SSJL', 'AJJBQK', 'CPYZ', 'PJJG', 'WBWB']
         current_dir = os.path.dirname(__file__)
         self.data_dir = os.path.join(current_dir,'../../data')
+
         self.seg_data_file = os.path.join(self.data_dir,'seg_data.pkl')
-        self.seg_without_stopword_data = os.path.join(self.data_dir,'seg_without_stopword_data.pkl')
-        self.test_data = os.path.join(self.data_dir,'test.txt')
-        self.vocaber = os.path.join(self.data_dir,'vocaber_file.pkl')
+        self.seg_without_stopword_data_file = os.path.join(self.data_dir,'seg_without_stopword_data.pkl')
+        self.test_data_file = os.path.join(self.data_dir,'test.txt')
+        self.vocaber_file = os.path.join(self.data_dir,'vocaber_file.pkl')
         self.doc_data_file = os.path.join(self.data_dir,'doc_file.pkl')
         self.stopword_file = os.path.join(self.data_dir,'stopword')
 
+        self.lazy_attr_set = set(['vocaber'])
+
+        self.sql = mysql_data()
+
         self.max_lenth = 200
         self.min_frequency = 5
+    def __getattr__(self, item):
+        if(item =='vocaber'):
+            self.__dict__[item] = self.load_vocaber()
+            return self.__dict__[item]
+
 
     def get_data_dir(self):
         return self.data_dir
+
 
     def get_keys(self):
         return self.keys
@@ -97,6 +123,8 @@ class Text_processing():
             if (i not in self.stopword_set):
                 value_tmp.append(i)
         return " ".join(value_tmp)
+    def replace_white_space_with_dash(self,sentence):
+        return sentence.replace(' ','-')
     def save_doc_data(self):
         docs = []
         file = open(self.raw_data_file,'rb')
@@ -158,7 +186,7 @@ class Text_processing():
             docs.append(document_seg)
             if (s % 100 == 0):
                 print("segging law data",s)
-        test_file = open(self.test_data,'w')
+        test_file = open(self.test_data_file,'w')
         for s, item in enumerate(jss[-1000:]):
             test_file.write('No.'+str(s)+'----------------------'+'\n')
             document = item['document']
@@ -187,14 +215,14 @@ class Text_processing():
                 value = self.remove_stop_word(value)
                 if len(value)>0:
                     doc[key] = value
-        file = open(self.seg_without_stopword_data,'wb')
+        file = open(self.seg_without_stopword_data_file,'wb')
         if(save):
             pickle.dump(docs,file)
         return docs
 
     def load_seg_without_stopword_data(self, save=True):
         try:
-            file = open(self.seg_without_stopword_data,'rb')
+            file = open(self.seg_without_stopword_data_file,'rb')
         except FileNotFoundError:
             return self.save_seg_without_stopword_data()
         return pickle.load(file)
@@ -263,19 +291,18 @@ class Text_processing():
         target = target[:400000]
         vocaber = learn.preprocessing.VocabularyProcessor(self.max_lenth, min_frequency=self.min_frequency)
         vocaber.fit(data)
-        file = open(self.vocaber,'wb')
+        file = open(self.vocaber_file,'wb')
         pickle.dump(vocaber,file)
         return vocaber
     def load_vocaber(self):
         try:
-            file = open(self.vocaber, 'rb')
+            file = open(self.vocaber_file, 'rb')
         except FileNotFoundError:
             return self.save_vocaber()
         return pickle.load(file)
 
     def get_embed(self,sentence):
-        vocaber = self.load_vocaber()
-        embed = vocaber.transform([sentence])
+        embed = self.vocaber.transform([sentence])
         return list(embed)[0]
     def cut_head_and_tail(self,data,target):
         s_t = []
@@ -432,13 +459,8 @@ class Text_processing():
         cursor.close()
         db.close()
     def select_from_mysql(self,id):
-        db = pymysql.connect("localhost", "root", "19961231", "law_data", charset='utf8')
-        cursor = db.cursor()
-        sql = """ select * from law_data where id=%d"""%(id)
-        cursor.execute(sql)
-        cursor.close()
-        db.close()
-        return cursor.fetchall()
+        return self.sql.search(id)
+
 
 if __name__=="__main__":
     t=Text_processing()

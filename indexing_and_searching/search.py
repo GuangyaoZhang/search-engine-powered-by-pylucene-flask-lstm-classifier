@@ -40,6 +40,9 @@ from org.apache.lucene.queryparser.classic import QueryParserBase
 
 from org.apache.lucene.search import BooleanClause
 
+
+from org.apache.lucene.analysis.core import SimpleAnalyzer
+
 import os
 class Searcher():
     def __init__(self):
@@ -51,6 +54,9 @@ class Searcher():
 
         self.analyzer = WhitespaceAnalyzer()
         self.keys = self.text.get_keys()
+
+        self.directory = SimpleFSDirectory(Paths.get(self.index_dir))
+        self.searcher = IndexSearcher(DirectoryReader.open(self.directory))
 
         self.classifier = Classifier()
 
@@ -108,17 +114,19 @@ class Searcher():
 
         writer.commit()
         writer.close()
-    def search_seg_data(self,command,num,use_clf):
+    def search_data(self,command,num,use_clf):
+        print("log1",command,num,use_clf)
         self.vm.attachCurrentThread()
-        directory = SimpleFSDirectory(Paths.get(self.index_dir))
-        searcher = IndexSearcher(DirectoryReader.open(directory))
+        searcher = self.searcher
 
         s = set(command)
 
         if(":" not in s and "：" not in s):
             if (use_clf):
-
                 probs = self.classifier.predict(command)
+                command = self.text.seg(command)
+                command = self.text.remove_stop_word(command)
+                command = self.text.replace_white_space_with_dash(command)
                 key = sorted(range(len(self.keys)),key=lambda i:probs[i],reverse=True)
                 key_use = []
                 key_use.append(key[0])
@@ -137,7 +145,8 @@ class Searcher():
                 # command = "WBSB:浙江省 WBSB:苍南县 WBSB:人民法院"
                 print("矣")
                 print(command)
-                # query = QueryParser("PubDate", self.analyzer).parse(command)
+                command = "Title:陕西省-高级-人民法院 Pubdate:陕西省-高级-人民法院"
+                query = QueryParser("PubDate",SimpleAnalyzer()).parse(command)
                 # parser =  MultiFieldQueryParser(['WBSB'], self.analyzer)
                 # parser.setDefaultOperator(QueryParserBase.AND_OPERATOR)
                 # query =parser.parse(QueryParserBase,command)
@@ -152,21 +161,18 @@ class Searcher():
                 # # p = QueryParser('Title', CJKAnalyzer()).parse("你好 中国 你好 北京")
                 # print(query)
 
-                fields = []
-                # fields = ["filename", "contents", "description"]
-
-                for i in key_use:
-                    fields.append(self.keys[i])
-
-                flags = [BooleanClause.Occur.SHOULD]*len(fields)
-
-                query=MultiFieldQueryParser.parse(command, fields, flags, WhitespaceAnalyzer())
-
+                # fields = []
+                # # fields = ["filename", "contents", "description"]
+                #
+                # for i in key_use:
+                #     fields.append(self.keys[i])
+                # flags = [BooleanClause.Occur.SHOULD]*len(fields)
+                #
+                # query=MultiFieldQueryParser.parse(command, fields, flags, WhitespaceAnalyzer())
+                #
                 print(query)
 
                 scoreDocs = searcher.search(query, num).scoreDocs
-
-
 
                 results = []
 
@@ -188,13 +194,26 @@ class Searcher():
                 return results,probs,key_use
 
             else:
-                command_final = "Title:"+command
-                for i in self.keys[1:]:
-                    command_final = "%s OR %s:%s"% (command_final,i,command)
-                command=command_final
-                print("矣")
-                print(command)
-                query = QueryParser("Title", self.analyzer).parse(command)
+                command = self.text.seg(command)
+                command = self.text.remove_stop_word(command)
+                fields = self.keys
+                flags = [BooleanClause.Occur.SHOULD] * len(fields)
+
+                query = MultiFieldQueryParser.parse(command, fields, flags, WhitespaceAnalyzer())
+
+                # command_final = "Title:"+command
+                # for i in self.keys[1:]:
+                #     command_final = "%s OR %s:%s"% (command_final,i,command)
+                # command=command_final
+                # print("矣")
+                # print(command)
+                # query = QueryParser("Title", self.analyzer).parse(command)
+
+                fields = self.keys
+                flags = [BooleanClause.Occur.SHOULD] * len(fields)
+
+                query = MultiFieldQueryParser.parse(command, fields, flags, WhitespaceAnalyzer())
+                print(query)
                 scoreDocs = searcher.search(query, num).scoreDocs
 
                 results = []
@@ -207,12 +226,11 @@ class Searcher():
                     result['id'] = doc.get('id')
                     results.append(result)
                 return results
+
     def search(self,command,num,use_clf):
-        command = self.text.seg(command)
-        command = self.text.remove_stop_word(command)
         if(use_clf):
-            results, probs, key_use = self.search_seg_data(command,num,use_clf)
-            print("seg_data_result",results)
+            results, probs, key_use = self.search_data(command,num,use_clf)
+            print("result",results)
             ds = []
             for i in results:
                 d = dict()
@@ -226,7 +244,7 @@ class Searcher():
                 print(d)
             return ds,probs, key_use
         else:
-            results = self.search_seg_data(command, num, use_clf)
+            results = self.search_data(command, num, use_clf)
             ds = []
             for i in results:
                 d = dict()
