@@ -40,8 +40,9 @@ class dataset(Dataset):
 
 
 class Text_processing():
-    def __init__(self):
+    def __init__(self,just_segging = True):
         self._lib = None
+        self.just_segging = just_segging
         self.stopword_set = None
         self.raw_data_file = "/media/zgy/新加卷/formed_data/data_0_300000_?_3023756473.pkl"
         self.keys = ['Title', 'PubDate', 'WBSB', 'DSRXX', 'SSJL', 'AJJBQK', 'CPYZ', 'PJJG', 'WBWB']
@@ -75,10 +76,14 @@ class Text_processing():
         return self.keys
 
     def init_segging(self,model_path=b'', user_dict_path=b'', pre_alloc_size=1024 * 1024 * 16, t2s=False, just_seg=True):
-
+        just_seg = self.just_segging
         if self._lib == None:
-            path = b"/home/zgy/THULAC.so-master"  # 设置so文件的位置
+            if(just_seg):
+                path = b"/home/zgy/THULAC.so-master"  # 设置so文件的位置
+            else:
+                path = b"/home/zgy/THULAC(1).so-master"
             self._lib = cdll.LoadLibrary(path + b'/libthulac.so')  # 读取so文件
+            print(self._lib)
             if len(model_path) == 0:
                 model_path = path + b'/models'  # 获取models文件夹位置
         return self._lib.init(c_char_p(model_path), c_char_p(user_dict_path), pre_alloc_size, int(t2s),
@@ -88,11 +93,12 @@ class Text_processing():
         if self._lib != None: self._lib.deinit()
 
     def seg(self,sentence):
-        s_t = []
-        for i in sentence:
-            if(i!=' ' and i!='　'):
-                s_t.append(i)
-        sentence = "".join(s_t)
+        # s_t = []
+        # for i in sentence:
+        #     if(i!=' ' and i!='　'):
+        #         s_t.append(i)
+        # sentence = "".join(s_t)
+        print(sentence)
         sentence = sentence.encode('UTF-8')
         if(self._lib ==None):
             self.init_segging()
@@ -106,6 +112,8 @@ class Text_processing():
 
         self._lib.freeResult()
         return d
+
+
 
     def init_stop_word(self):
         file = open(self.stopword_file,'r')
@@ -392,6 +400,10 @@ class Text_processing():
 
         train_data, test_data = data[:250000],data[250000:251000]
         train_target, test_target = target[:250000], target[250000:251000]
+
+        for i in zip(test_data,test_target):
+            print(i)
+
         vocaber = self.load_vocaber()
         if (train):
             return dataset(train_data, train_target, vocaber)
@@ -464,9 +476,12 @@ class Text_processing():
 
 if __name__=="__main__":
     t=Text_processing()
-    li = []
-    for i in range(100):
-        li.append(" ".join([str(i) for i in range(100)]))
+    # li = []
+    # for i in range(100):
+    #     li.append(" ".join([str(i) for i in range(100)]))
+    #
+    # s,_ = t.random_intercept(li,None)
+    # print([])
 
-    s,_ = t.random_intercept(li,None)
-    print([])
+    test_loader = t.re_prep_law_data_for_pytorch(train=False)
+

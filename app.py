@@ -13,15 +13,21 @@ def index():
 @app.route('/search',methods = ['post'])
 def search():
     command = request.form['query']
+    use_query = "use_query" in request.form
+    if(use_query):
+        pattern= searcher.query(command)
+        return render_template('search.html',use_query = use_query,pattern = pattern,command = command)
+
     use_clf = ("use_clf" in request.form)
+    #
+    # if(use_clf):
+    results, probs, key_use= searcher.search(command,10,use_clf)
+    return render_template('search.html', results=results, use_clf=use_clf, command=command,probs=probs, key_use=key_use)
 
-    if(use_clf):
-        results, probs, key_use= searcher.search(command,20,use_clf)
-        return render_template('search.html', results=results, use_clf=use_clf, command=command,probs=probs, key_use=key_use)
-    else:
-        results = searcher.search(command,100,use_clf)
-        return render_template('search.html', results=results,use_clf=use_clf,command=command)
-
+    # else:
+    #     results = searcher.search(command,100,use_clf)
+    #     return render_template('search.html', results=results,use_clf=use_clf,command=command)
+    #
 
 if __name__ == '__main__':
     app.debug = True

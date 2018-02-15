@@ -22,6 +22,15 @@
                     <input type = "checkbox" name="use_clf" value="use_clf" {%if use_clf%} checked {%endif%}>
 
                 </td>
+
+                 <td>
+                     问答
+                </td>
+                <td>
+
+                    <input type = "checkbox" name="use_query" value="use_query" {%if use_query%} checked {%endif%}>
+
+                </td>
             </tr>
             </tr>
         </table>
@@ -31,6 +40,10 @@
     <p>probs:{{probs}}</p>
     <p>key_use:{{key_use}}</p>
 
+    {%endif%}
+
+    {%if pattern is defined%}
+    {{pattern}}
     {%endif%}
 
 

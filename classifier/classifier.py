@@ -117,8 +117,6 @@ class Classifier():
         result = F.softmax(result, 1)
         return result.data.numpy()[0]
 
-        os.chdir(os.path.dirname(__file__))
-
 
     def Train(self,text,model,loss_fun,optimizer,epoch,cuda,eval,save):
         gc.collect()
@@ -214,5 +212,5 @@ class Classifier():
 
 if __name__ == "__main__":
     clf = Classifier()
-    clf.train()
-    # print(clf.predict("2015-12-31"))
+
+    print(clf.predict("2016 12"))
